@@ -1,6 +1,7 @@
 __all__ = ("SingleFrameKSigmaMomFluxPlugin", "SingleFrameKSigmaMomFluxConfig",
            "ForcedKSigmaMomFluxPlugin", "ForcedKSigmaMomFluxConfig")
 
+import logger
 import lsst.meas.base as measBase
 
 PLUGIN_NAME = "ext_ksigmamom_KSigmaMomFlux"
@@ -18,9 +19,23 @@ class BaseKSigmaMomFluxConfig(measBase.BaseMeasurementPluginConfig):
 
 
 class BaseKSigmaMomFluxMixin:
+    """Mixin base class for ksigmamom photometry.
     """
-    """
-    pass
+    ConfigClass = BaseKSigmaMomFluxConfig
+    hasLogName = True
+
+    def __init__(self, config, name, schema, logname=None):
+        flagDefs = measBase.FlagDefinitionList()
+        baseName = name
+        doc = f"ksigmamom"
+        FluxResultKey.addFields(schema, name=baseName, doc=doc)
+
+        # Need to do flagDefs
+
+        if config.registerForApCorr:
+            measBase.addApCorrName(baseName)
+
+        self.log = logging.getLogger(logName)
 
 
 class SingleFrameKSigmaMomFluxConfig(BaseKSigmaMomFluxConfig,
