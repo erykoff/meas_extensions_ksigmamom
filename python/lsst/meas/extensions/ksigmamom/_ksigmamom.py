@@ -24,7 +24,7 @@ class BaseKSigmaMomFluxMixin:
     ConfigClass = BaseKSigmaMomFluxConfig
     hasLogName = True
 
-    def __init__(self, config, name, schema, logname=None):
+    def __init__(self, config, name, schema, logName=None):
         flagDefs = measBase.FlagDefinitionList()
         baseName = name
         doc = f"ksigmamom"
