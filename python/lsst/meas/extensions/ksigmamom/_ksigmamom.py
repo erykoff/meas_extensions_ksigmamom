@@ -7,9 +7,14 @@ PLUGIN_NAME = "ext_ksigmamom_KSigmaMomFlux"
 
 
 class BaseKSigmaMomFluxConfig(measBase.BaseMeasurementPluginConfig):
-    """Configuration parameters for KSigma Momemnts (ksigmamom) plugin.
+    """Configuration parameters for KSigma Moments (ksigmamom) plugin.
     """
-    pass
+    def getAllKSigmaMomResultNames(self, name):
+        """Generate base names for all the ksigmamom fields.
+
+        There's just the one at the moment.
+        """
+        return [name]
 
 
 class BaseKSigmaMomFluxMixin:
