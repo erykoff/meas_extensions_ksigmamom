@@ -4,6 +4,7 @@ __all__ = ("SingleFrameKSigmaMomFluxPlugin", "SingleFrameKSigmaMomFluxConfig",
 import logging
 import lsst.meas.base as measBase
 from lsst.meas.base.fluxUtilities import FluxResultKey
+import lsst.pex.config as pexConfig
 
 PLUGIN_NAME = "ext_ksigmamom_KSigmaMomFlux"
 
