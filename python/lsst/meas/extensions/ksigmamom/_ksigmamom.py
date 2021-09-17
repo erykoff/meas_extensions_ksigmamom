@@ -44,6 +44,8 @@ class BaseKSigmaMomFluxMixin:
         if config.registerForApCorr:
             measBase.addApCorrName(baseName)
 
+        self._failKey = schema.addField(name + '_flag', type="Flag", doc="Set for any fatal failure.")
+
         self.log = logging.getLogger(logName)
 
 
