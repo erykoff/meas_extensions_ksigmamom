@@ -11,6 +11,13 @@ PLUGIN_NAME = "ext_ksigmamom_KSigmaMomFlux"
 class BaseKSigmaMomFluxConfig(measBase.BaseMeasurementPluginConfig):
     """Configuration parameters for KSigma Moments (ksigmamom) plugin.
     """
+
+    registerForApCorr = pexConfig.Field(
+        dtype=bool,
+        default=True,
+        doc="Register measurements for aperture correction?",
+    )
+
     def getAllKSigmaMomResultNames(self, name):
         """Generate base names for all the ksigmamom fields.
 
