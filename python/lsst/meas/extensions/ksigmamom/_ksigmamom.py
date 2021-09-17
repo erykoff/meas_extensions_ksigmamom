@@ -1,7 +1,7 @@
 __all__ = ("SingleFrameKSigmaMomFluxPlugin", "SingleFrameKSigmaMomFluxConfig",
            "ForcedKSigmaMomFluxPlugin", "ForcedKSigmaMomFluxConfig")
 
-import logger
+import logging
 import lsst.meas.base as measBase
 
 PLUGIN_NAME = "ext_ksigmamom_KSigmaMomFlux"
