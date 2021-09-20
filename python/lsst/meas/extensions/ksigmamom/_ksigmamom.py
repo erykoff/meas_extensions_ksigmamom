@@ -6,6 +6,9 @@ import lsst.meas.base as measBase
 from lsst.meas.base.fluxUtilities import FluxResultKey
 import lsst.pex.config as pexConfig
 
+from metadetect import lsst_measure
+from ngmix import ksigmamom
+
 PLUGIN_NAME = "ext_ksigmamom_KSigmaMomFlux"
 
 
@@ -17,6 +20,18 @@ class BaseKSigmaMomFluxConfig(measBase.BaseMeasurementPluginConfig):
         dtype=bool,
         default=True,
         doc="Register measurements for aperture correction?",
+    )
+
+    ksigmaFwhm = pexConfig.Field(
+        dtype=float,
+        default=2.0,
+        doc="KSigma moment FWHM (arcseconds)",
+    )
+
+    stampSize = pexConfig.Field(
+        dtype=int,
+        default=80,
+        doc="Fitting stamp size (pixels)",
     )
 
     def getAllKSigmaMomResultNames(self, name):
@@ -34,9 +49,9 @@ class BaseKSigmaMomFluxMixin:
     hasLogName = True
 
     def __init__(self, config, name, schema, logName=None):
-        flagDefs = measBase.FlagDefinitionList()
+        # flagDefs = measBase.FlagDefinitionList()
         baseName = name
-        doc = f"ksigmamom"
+        doc = "ksigmamom fields"
         FluxResultKey.addFields(schema, name=baseName, doc=doc)
 
         # Need to do flagDefs
@@ -65,6 +80,8 @@ class SingleFrameKSigmaMomFluxPlugin(BaseKSigmaMomFluxMixin, measBase.SingleFram
         BaseKSigmaMomFluxMixin.__init__(self, config, name, schema, logName=logName)
         measBase.SingleFramePlugin.__init__(self, config, name, schema, metadata, logName=logName)
 
+        self.fitter = ksigmamom.KSigmaMom(config.ksigmaFwhm)
+
     @classmethod
     def getExecutionOrder(cls):
         # Docstring inherited
@@ -72,10 +89,21 @@ class SingleFrameKSigmaMomFluxPlugin(BaseKSigmaMomFluxMixin, measBase.SingleFram
 
     def measure(self, measRecord, exposure):
         # Docstring inherited.
-        # center = measRecord.getCentroid()
-        import IPython
-        IPython.embed()
-        pass
+
+        center = measRecord.getCentroid()
+
+        coordIn = measRecord.getCoord()
+        measRecord.setCoord(exposure.getWcs().pixelToSky(center))
+        res = lsst_measure.measure(exposure,
+                                   [measRecord],
+                                   self.fitter,
+                                   self.config.stampSize)
+        measRecord.setCoord(coordIn)
+
+        measRecord[f'{self.name}_instFlux'] = res['ksigma_flux']
+        measRecord[f'{self.name}_instFluxErr'] = res['ksigma_flux_err']
+        if res['flags'] > 0:
+            measRecord[f'{self.name}_flag'] = True
 
 
 class ForcedKSigmaMomFluxConfig(BaseKSigmaMomFluxConfig, measBase.ForcedPluginConfig):
@@ -102,6 +130,7 @@ class ForcedKSigmaMomFluxPlugin(BaseKSigmaMomFluxMixin, measBase.ForcedPlugin):
         # Docstring inherited.
         # wcs = exposure.getWcs()
         # center = wcs.skyToPixel(refWcs.pixelToSky(refRecord.getCentroid()))
+        print('THERE YOU ARE')
 
         import IPython
         IPython.embed()
