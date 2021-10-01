@@ -1,6 +1,8 @@
 __all__ = ("SingleFrameKSigmaMomFluxPlugin", "SingleFrameKSigmaMomFluxConfig",
            "ForcedKSigmaMomFluxPlugin", "ForcedKSigmaMomFluxConfig")
 
+import numpy as np
+
 import logging
 import lsst.meas.base as measBase
 from lsst.meas.base.fluxUtilities import FluxResultKey
@@ -98,12 +100,19 @@ class SingleFrameKSigmaMomFluxPlugin(BaseKSigmaMomFluxMixin, measBase.SingleFram
                                    [measRecord],
                                    self.fitter,
                                    self.config.stampSize)
+
         measRecord.setCoord(coordIn)
 
-        measRecord[f'{self.name}_instFlux'] = res['ksigma_flux']
-        measRecord[f'{self.name}_instFluxErr'] = res['ksigma_flux_err']
-        if res['flags'] > 0:
+        if res is None:
+            # No measurement could be made
+            measRecord[f'{self.name}_instFlux'] = np.nan
+            measRecord[f'{self.name}_instFluxErr'] = np.nan
             measRecord[f'{self.name}_flag'] = True
+        else:
+            measRecord[f'{self.name}_instFlux'] = res['ksigma_flux']
+            measRecord[f'{self.name}_instFluxErr'] = res['ksigma_flux_err']
+            if res['flags'] > 0:
+                measRecord[f'{self.name}_flag'] = True
 
 
 class ForcedKSigmaMomFluxConfig(BaseKSigmaMomFluxConfig, measBase.ForcedPluginConfig):
