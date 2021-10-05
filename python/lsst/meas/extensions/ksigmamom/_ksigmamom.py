@@ -130,6 +130,8 @@ class ForcedKSigmaMomFluxPlugin(BaseKSigmaMomFluxMixin, measBase.ForcedPlugin):
         BaseKSigmaMomFluxMixin.__init__(self, config, name, schema, logName=logName)
         measBase.ForcedPlugin.__init__(self, config, name, schemaMapper, metadata, logName=logName)
 
+        self.fitter = ksigmamom.KSigmaMom(config.ksigmaFwhm)
+
     @classmethod
     def getExecutionOrder(cls):
         # Docstring inherited.
@@ -137,10 +139,25 @@ class ForcedKSigmaMomFluxPlugin(BaseKSigmaMomFluxMixin, measBase.ForcedPlugin):
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
         # Docstring inherited.
-        # wcs = exposure.getWcs()
-        # center = wcs.skyToPixel(refWcs.pixelToSky(refRecord.getCentroid()))
-        print('THERE YOU ARE')
 
-        import IPython
-        IPython.embed()
-        pass
+        # The measRecord has the coordinate from the refRecord when
+        # running in forced mode?  Let's be sure.
+        coordIn = measRecord.getCoord()
+        measRecord.setCoord(coordIn)
+
+        res = lsst_measure.measure(exposure,
+                                   [measRecord],
+                                   self.fitter,
+                                   self.config.stampSize)
+        measRecord.setCoord(coordIn)
+
+        if res is None:
+            # No measurement could be made
+            measRecord[f'{self.name}_instFlux'] = np.nan
+            measRecord[f'{self.name}_instFluxErr'] = np.nan
+            measRecord[f'{self.name}_flag'] = True
+        else:
+            measRecord[f'{self.name}_instFlux'] = res['ksigma_flux']
+            measRecord[f'{self.name}_instFluxErr'] = res['ksigma_flux_err']
+            if res['flags'][0] > 0:
+                measRecord[f'{self.name}_flag'] = True
