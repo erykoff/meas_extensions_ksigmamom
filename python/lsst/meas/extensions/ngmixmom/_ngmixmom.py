@@ -104,7 +104,7 @@ class SingleFrameNgmixMomFluxPlugin(BaseNgmixMomFluxMixin, measBase.SingleFrameP
         center = measRecord.getCentroid()
 
         coordIn = measRecord.getCoord()
-        measRecord.setCoord(wcs.pixelToSky(center))
+        measRecord.setCoord(exposure.getWcs().pixelToSky(center))
 
         mbexp = get_mbexp([exposure])
 
