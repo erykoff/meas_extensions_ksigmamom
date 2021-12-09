@@ -89,7 +89,7 @@ class SingleFrameNgmixMomFluxPlugin(BaseNgmixMomFluxMixin, measBase.SingleFrameP
         BaseNgmixMomFluxMixin.__init__(self, config, name, schema, logName=logName)
         measBase.SingleFramePlugin.__init__(self, config, name, schema, metadata, logName=logName)
 
-        self.fitter = prepsfmom.PrePsfMom(config.fwhm, config.kernel)
+        self.fitter = prepsfmom.PrePSFMom(config.fwhm, config.kernel)
 
     @classmethod
     def getExecutionOrder(cls):
@@ -137,7 +137,7 @@ class ForcedNgmixMomFluxPlugin(BaseNgmixMomFluxMixin, measBase.ForcedPlugin):
         BaseNgmixMomFluxMixin.__init__(self, config, name, schema, logName=logName)
         measBase.ForcedPlugin.__init__(self, config, name, schemaMapper, metadata, logName=logName)
 
-        self.fitter = prepsfmom.PrePsfMom(config.fwhm, config.kernel)
+        self.fitter = prepsfmom.PrePSFMom(config.fwhm, config.kernel)
 
     @classmethod
     def getExecutionOrder(cls):
