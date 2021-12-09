@@ -1,1 +1,1 @@
-# meas_extensions_ksigmamom
+# meas_extensions_ngmixmom

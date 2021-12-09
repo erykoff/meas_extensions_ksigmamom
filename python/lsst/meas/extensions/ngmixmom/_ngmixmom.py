@@ -1,5 +1,5 @@
-__all__ = ("SingleFrameKSigmaMomFluxPlugin", "SingleFrameKSigmaMomFluxConfig",
-           "ForcedKSigmaMomFluxPlugin", "ForcedKSigmaMomFluxConfig")
+__all__ = ("SingleFrameNgmixMomFluxPlugin", "SingleFrameNgmixMomFluxConfig",
+           "ForcedNgmixMomFluxPlugin", "ForcedNgmixMomFluxConfig")
 
 import numpy as np
 
@@ -8,13 +8,13 @@ import lsst.meas.base as measBase
 from lsst.meas.base.fluxUtilities import FluxResultKey
 import lsst.pex.config as pexConfig
 
-from metadetect import lsst_measure
-from ngmix import ksigmamom
+from metadetect import lsst.measure as lsst_measure
+from ngmix import prepsfmom
 
-PLUGIN_NAME = "ext_ksigmamom_KSigmaMomFlux"
+PLUGIN_NAME = "ext_ngmixmom_NgmixMomFlux"
 
 
-class BaseKSigmaMomFluxConfig(measBase.BaseMeasurementPluginConfig):
+class BaseNgmixMomFluxConfig(measBase.BaseMeasurementPluginConfig):
     """Configuration parameters for KSigma Moments (ksigmamom) plugin.
     """
 
@@ -24,10 +24,17 @@ class BaseKSigmaMomFluxConfig(measBase.BaseMeasurementPluginConfig):
         doc="Register measurements for aperture correction?",
     )
 
-    ksigmaFwhm = pexConfig.Field(
+    fwhm = pexConfig.Field(
         dtype=float,
         default=2.0,
-        doc="KSigma moment FWHM (arcseconds)",
+        doc="Moment FWHM (arcseconds)",
+    )
+
+    # Update this to allow a list of moments...
+    kernel = pexConfig.Field(
+        dtype=str,
+        default='pgauss',
+        doc="Type of moment kernel (pgauss, ksigma).",
     )
 
     stampSize = pexConfig.Field(
@@ -36,24 +43,24 @@ class BaseKSigmaMomFluxConfig(measBase.BaseMeasurementPluginConfig):
         doc="Fitting stamp size (pixels)",
     )
 
-    def getAllKSigmaMomResultNames(self, name):
-        """Generate base names for all the ksigmamom fields.
+    def getAllNgmixMomResultNames(self, name):
+        """Generate base names for all the ngmix moment fields.
 
         There's just the one at the moment.
         """
         return [name]
 
 
-class BaseKSigmaMomFluxMixin:
-    """Mixin base class for ksigmamom photometry.
+class BaseNgmixMomFluxMixin:
+    """Mixin base class for ngmix moment photometry.
     """
-    ConfigClass = BaseKSigmaMomFluxConfig
+    ConfigClass = BaseNgmixMomFluxConfig
     hasLogName = True
 
     def __init__(self, config, name, schema, logName=None):
         # flagDefs = measBase.FlagDefinitionList()
         baseName = name
-        doc = "ksigmamom fields"
+        doc = "ngmixmom fields"
         FluxResultKey.addFields(schema, name=baseName, doc=doc)
 
         # Need to do flagDefs
@@ -66,23 +73,23 @@ class BaseKSigmaMomFluxMixin:
         self.log = logging.getLogger(logName)
 
 
-class SingleFrameKSigmaMomFluxConfig(BaseKSigmaMomFluxConfig,
-                                     measBase.SingleFramePluginConfig):
-    """Config for SingleFrameKSigmaMomFluxConfig."""
+class SingleFrameNgmixMomFluxConfig(BaseNgmixMomFluxConfig,
+                                    measBase.SingleFramePluginConfig):
+    """Config for SingleFrameNgmixMomFluxConfig."""
     pass
 
 
 @measBase.register(PLUGIN_NAME)
-class SingleFrameKSigmaMomFluxPlugin(BaseKSigmaMomFluxMixin, measBase.SingleFramePlugin):
-    """KSigma Moments in single-frame mode.
+class SingleFrameNgmixMomFluxPlugin(BaseNgmixMomFluxMixin, measBase.SingleFramePlugin):
+    """Ngmix Moments in single-frame mode.
     """
-    ConfigClass = SingleFrameKSigmaMomFluxConfig
+    ConfigClass = SingleFrameNgmixMomFluxConfig
 
     def __init__(self, config, name, schema, metadata, logName=None):
-        BaseKSigmaMomFluxMixin.__init__(self, config, name, schema, logName=logName)
+        BaseNgmixMomFluxMixin.__init__(self, config, name, schema, logName=logName)
         measBase.SingleFramePlugin.__init__(self, config, name, schema, metadata, logName=logName)
 
-        self.fitter = ksigmamom.KSigmaMom(config.ksigmaFwhm)
+        self.fitter = prepsfmom.PrePsfMom(config.fwhm, config.kernel)
 
     @classmethod
     def getExecutionOrder(cls):
@@ -109,28 +116,28 @@ class SingleFrameKSigmaMomFluxPlugin(BaseKSigmaMomFluxMixin, measBase.SingleFram
             measRecord[f'{self.name}_instFluxErr'] = np.nan
             measRecord[f'{self.name}_flag'] = True
         else:
-            measRecord[f'{self.name}_instFlux'] = res['ksigma_flux']
-            measRecord[f'{self.name}_instFluxErr'] = res['ksigma_flux_err']
+            measRecord[f'{self.name}_instFlux'] = res[f'{self.config.kernel}_flux']
+            measRecord[f'{self.name}_instFluxErr'] = res[f'{self.config.kernel}_flux_err']
             if res['flags'] > 0:
                 measRecord[f'{self.name}_flag'] = True
 
 
-class ForcedKSigmaMomFluxConfig(BaseKSigmaMomFluxConfig, measBase.ForcedPluginConfig):
-    """Config for ForcedKSigmaMomFluxPlugin."""
+class ForcedNgmixMomFluxConfig(BaseNgmixMomFluxConfig, measBase.ForcedPluginConfig):
+    """Config for ForcedNgmixMomFluxPlugin."""
 
 
 @measBase.register(PLUGIN_NAME)
-class ForcedKSigmaMomFluxPlugin(BaseKSigmaMomFluxMixin, measBase.ForcedPlugin):
-    """KSigmaMom Flux photometry in forced mode.
+class ForcedNgmixMomFluxPlugin(BaseNgmixMomFluxMixin, measBase.ForcedPlugin):
+    """NgmixMom Flux photometry in forced mode.
     """
-    ConfigClass = ForcedKSigmaMomFluxConfig
+    ConfigClass = ForcedNgmixMomFluxConfig
 
     def __init__(self, config, name, schemaMapper, metadata, logName=None):
         schema = schemaMapper.editOutputSchema()
-        BaseKSigmaMomFluxMixin.__init__(self, config, name, schema, logName=logName)
+        BaseNgmixMomFluxMixin.__init__(self, config, name, schema, logName=logName)
         measBase.ForcedPlugin.__init__(self, config, name, schemaMapper, metadata, logName=logName)
 
-        self.fitter = ksigmamom.KSigmaMom(config.ksigmaFwhm)
+        self.fitter = prepsfmom.PrePsfMom(config.fwhm, config.kernel)
 
     @classmethod
     def getExecutionOrder(cls):
@@ -157,7 +164,7 @@ class ForcedKSigmaMomFluxPlugin(BaseKSigmaMomFluxMixin, measBase.ForcedPlugin):
             measRecord[f'{self.name}_instFluxErr'] = np.nan
             measRecord[f'{self.name}_flag'] = True
         else:
-            measRecord[f'{self.name}_instFlux'] = res['ksigma_flux']
-            measRecord[f'{self.name}_instFluxErr'] = res['ksigma_flux_err']
+            measRecord[f'{self.name}_instFlux'] = res[f'{self.config.kernel}_flux']
+            measRecord[f'{self.name}_instFluxErr'] = res[f'{self.config.kernel}_flux_err']
             if res['flags'][0] > 0:
                 measRecord[f'{self.name}_flag'] = True
