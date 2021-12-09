@@ -8,7 +8,7 @@ import lsst.meas.base as measBase
 from lsst.meas.base.fluxUtilities import FluxResultKey
 import lsst.pex.config as pexConfig
 
-from metadetect import lsst.measure as lsst_measure
+from metadetect.lsst import measure as lsst_measure
 from ngmix import prepsfmom
 
 PLUGIN_NAME = "ext_ngmixmom_NgmixMomFlux"
