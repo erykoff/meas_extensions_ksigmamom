@@ -9,6 +9,7 @@ from lsst.meas.base.fluxUtilities import FluxResultKey
 import lsst.pex.config as pexConfig
 
 from metadetect.lsst import measure as lsst_measure
+from metadetect.lsst.util import get_mbexp
 from ngmix import prepsfmom
 
 PLUGIN_NAME = "ext_ngmixmom_NgmixMomFlux"
@@ -90,6 +91,7 @@ class SingleFrameNgmixMomFluxPlugin(BaseNgmixMomFluxMixin, measBase.SingleFrameP
         measBase.SingleFramePlugin.__init__(self, config, name, schema, metadata, logName=logName)
 
         self.fitter = prepsfmom.PrePSFMom(config.fwhm, config.kernel)
+        self.fitter.kind = config.kernel
 
     @classmethod
     def getExecutionOrder(cls):
@@ -102,8 +104,12 @@ class SingleFrameNgmixMomFluxPlugin(BaseNgmixMomFluxMixin, measBase.SingleFrameP
         center = measRecord.getCentroid()
 
         coordIn = measRecord.getCoord()
-        measRecord.setCoord(exposure.getWcs().pixelToSky(center))
-        res = lsst_measure.measure(exposure,
+        measRecord.setCoord(wcs.pixelToSky(center))
+
+        mbexp = get_mbexp([exposure])
+
+        res = lsst_measure.measure(mbexp,
+                                   exposure,
                                    [measRecord],
                                    self.fitter,
                                    self.config.stampSize)
@@ -116,8 +122,8 @@ class SingleFrameNgmixMomFluxPlugin(BaseNgmixMomFluxMixin, measBase.SingleFrameP
             measRecord[f'{self.name}_instFluxErr'] = np.nan
             measRecord[f'{self.name}_flag'] = True
         else:
-            measRecord[f'{self.name}_instFlux'] = res[f'{self.config.kernel}_flux']
-            measRecord[f'{self.name}_instFluxErr'] = res[f'{self.config.kernel}_flux_err']
+            measRecord[f'{self.name}_instFlux'] = res[f'{self.config.kernel}_band_flux']
+            measRecord[f'{self.name}_instFluxErr'] = res[f'{self.config.kernel}_band_flux_err']
             if res['flags'] > 0:
                 measRecord[f'{self.name}_flag'] = True
 
@@ -138,6 +144,7 @@ class ForcedNgmixMomFluxPlugin(BaseNgmixMomFluxMixin, measBase.ForcedPlugin):
         measBase.ForcedPlugin.__init__(self, config, name, schemaMapper, metadata, logName=logName)
 
         self.fitter = prepsfmom.PrePSFMom(config.fwhm, config.kernel)
+        self.fitter.kind = config.kernel
 
     @classmethod
     def getExecutionOrder(cls):
@@ -152,7 +159,10 @@ class ForcedNgmixMomFluxPlugin(BaseNgmixMomFluxMixin, measBase.ForcedPlugin):
         coordIn = measRecord.getCoord()
         measRecord.setCoord(coordIn)
 
-        res = lsst_measure.measure(exposure,
+        mbexp = get_mbexp([exposure])
+
+        res = lsst_measure.measure(mbexp,
+                                   exposure,
                                    [measRecord],
                                    self.fitter,
                                    self.config.stampSize)
@@ -164,7 +174,7 @@ class ForcedNgmixMomFluxPlugin(BaseNgmixMomFluxMixin, measBase.ForcedPlugin):
             measRecord[f'{self.name}_instFluxErr'] = np.nan
             measRecord[f'{self.name}_flag'] = True
         else:
-            measRecord[f'{self.name}_instFlux'] = res[f'{self.config.kernel}_flux']
-            measRecord[f'{self.name}_instFluxErr'] = res[f'{self.config.kernel}_flux_err']
+            measRecord[f'{self.name}_instFlux'] = res[f'{self.config.kernel}_band_flux']
+            measRecord[f'{self.name}_instFluxErr'] = res[f'{self.config.kernel}_band_flux_err']
             if res['flags'][0] > 0:
                 measRecord[f'{self.name}_flag'] = True
